@@ -3,12 +3,17 @@
 //
 
 #include <cmath>
+#include <vector>
 #include "planner.h"
-#include "vehicle.h"
+//#include "vehicle.h"
+#include "map.h"
 
-Planner::Planner(){
-  NUM_POINTS_ = 20;
-  TIME_STEP_ = 0.02;
+Planner::Planner(Map map) : map(map) {
+  NUM_POINTS_ = 50;
+  TIME_STEP_ = 0.02;    // s
+  MAX_ACCELERATION = 9.81;   //m/s^2
+  SPEED_LIMIT = 22.352;   //m/s -> 55 MPH
+  this->map = map;
 }
 
 void Planner::Update(double car_x,
@@ -40,6 +45,25 @@ void Planner::Update(double car_x,
 
 
 void Planner::KeepLane() {
+  double pos_x;
+  double pos_y;
+  double angle;
+  int path_size = previous_path_x_.size();
+
+  // clear previous
+  next_x_ = {};
+  next_y_ = {};
+
+  double dist_inc = 0.5;
+  for(int i = 0; i < NUM_POINTS_; i++)
+  {
+    std::vector<double> next_xy = map.getXY(car_s_+i*dist_inc, car_d_);
+    next_x_.push_back(next_xy[0]);
+    next_y_.push_back(next_xy[1]);
+  }
+}
+
+void Planner::Circles(){
   double pos_x;
   double pos_y;
   double angle;

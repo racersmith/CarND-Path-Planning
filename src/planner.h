@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "vehicle.h"
+#include "map.h"
 
 class Planner {
 private:
@@ -16,9 +17,15 @@ private:
   // Time steps between points
   float TIME_STEP_;
 
+  // Maximum Acceleration
+  float MAX_ACCELERATION;
+
+  // Speed Limit
+  float SPEED_LIMIT;
+
+  // Course map
+  Map map;
 public:
-
-
   std::vector<double> next_x_;
   std::vector<double> next_y_;
   double car_x_;
@@ -34,7 +41,7 @@ public:
   std::vector<Vehicle> tracked_vehicles_;
 
   // Constructor
-  Planner();
+  Planner(Map map);
 
   // Destructor
   ~Planner()= default;
@@ -50,6 +57,11 @@ public:
    * Stay in lane and avoid forward and rearward collisions
    */
   void KeepLane();
+
+  /*
+   * Driving in circles example
+   */
+  void Circles();
 
 };
 
