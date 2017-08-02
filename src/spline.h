@@ -33,6 +33,27 @@
 #include <cassert>
 #include <vector>
 #include <algorithm>
+#include <numeric>
+
+
+// Sorting functions
+// https://stackoverflow.com/questions/17074324/how-can-i-sort-two-vectors-in-the-same-way-with-criteria-that-uses-only-one-of
+template <typename T>
+std::vector<std::size_t> sort_permutation(const std::vector<T>& vec) {
+  std::vector<std::size_t> p(vec.size());
+  std::iota(p.begin(), p.end(), 0);
+  std::sort(p.begin(), p.end(), [&](std::size_t i, std::size_t j){ return vec[i] < vec[j]; });
+  return p;
+}
+
+template <typename T>
+std::vector<T> apply_permutation(const std::vector<T>& vec, const std::vector<std::size_t>& p) {
+  std::vector<T> sorted_vec(vec.size());
+  std::transform(p.begin(), p.end(), sorted_vec.begin(),
+                 [&](std::size_t i){ return vec[i]; });
+  return sorted_vec;
+}
+
 
 
 // unnamed namespace only because the implementation is in this
@@ -160,7 +181,7 @@ namespace
       int k=j-i;       // what band is the entry
       assert( (i>=0) && (i<dim()) && (j>=0) && (j<dim()) );
       assert( (-num_lower()<=k) && (k<=num_upper()) );
-      // k=0 -> diogonal, k<0 lower left part, k>0 upper right part
+      // k=0 -> diagonal, k<0 lower left part, k>0 upper right part
       if(k>=0)   return m_upper[k][i];
       else	    return m_lower[-k][i];
     }
@@ -169,7 +190,7 @@ namespace
       int k=j-i;       // what band is the entry
       assert( (i>=0) && (i<dim()) && (j>=0) && (j<dim()) );
       assert( (-num_lower()<=k) && (k<=num_upper()) );
-      // k=0 -> diogonal, k<0 lower left part, k>0 upper right part
+      // k=0 -> diagonal, k<0 lower left part, k>0 upper right part
       if(k>=0)   return m_upper[k][i];
       else	    return m_lower[-k][i];
     }
@@ -283,9 +304,15 @@ namespace
     }
 
 
-    void spline::set_points(const std::vector<double>& x,
-                            const std::vector<double>& y, bool cubic_spline)
+    void spline::set_points(const std::vector<double>& unsorted_x,
+                            const std::vector<double>& unsorted_y, bool cubic_spline)
     {
+
+      // Sort the vector pair based on x
+      auto p = sort_permutation(unsorted_x);
+      std::vector<double> x = apply_permutation(unsorted_x, p);
+      std::vector<double> y = apply_permutation(unsorted_y, p);
+
       assert(x.size()==y.size());
       assert(x.size()>2);
       m_x=x;
