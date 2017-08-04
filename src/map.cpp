@@ -10,6 +10,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <algorithm>
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
@@ -47,24 +48,22 @@ Map::Map(std::string map_file) {
     map_waypoints_dx.push_back(d_x);
     map_waypoints_dy.push_back(d_y);
   }
-
-
-
-  int size = map_waypoints_x.size();
+  int size = map_waypoints_s.size();
   double last_step = distance(map_waypoints_x[0], map_waypoints_y[0],
-                              map_waypoints_x[size], map_waypoints_y[size]);
+                              map_waypoints_x.back(), map_waypoints_y.back());
 
   // Determine the roll over point
-  max_s = map_waypoints_s[size] + last_step;
+  lap_length = map_waypoints_s.back() + last_step;
+  std::cout << "Lap Length: " << lap_length << std::endl;
 
   // Overlap the map to the start
-  map_waypoints_x.push_back(map_waypoints_x[0]);
-  map_waypoints_y.push_back(map_waypoints_y[0]);
-  map_waypoints_s.push_back(max_s);
-  map_waypoints_dx.push_back(map_waypoints_dx[0]);
-  map_waypoints_dy.push_back(map_waypoints_dy[0]);
+//  map_waypoints_x.push_back(map_waypoints_x[0]);
+//  map_waypoints_y.push_back(map_waypoints_y[0]);
+//  map_waypoints_s.push_back(lap_length);
+//  map_waypoints_dx.push_back(map_waypoints_dx[0]);
+//  map_waypoints_dy.push_back(map_waypoints_dy[0]);
 
-  map_size = map_waypoints_x.size();
+  n_waypoints = map_waypoints_x.size();
 }
 
 
@@ -74,7 +73,7 @@ int Map::ClosestWaypoint(double x, double y)
   double closestLen = 100000; //large number
   int closestWaypoint = 0;
 
-  for(int i = 0; i < map_size; i++)
+  for(int i = 0; i < n_waypoints; i++)
   {
     double map_x = map_waypoints_x[i];
     double map_y = map_waypoints_y[i];
@@ -123,7 +122,7 @@ std::vector<double> Map::getFrenet(double x, double y, double theta)
   prev_wp = next_wp-1;
   if(next_wp == 0)
   {
-    prev_wp  = map_size-1;
+    prev_wp  = n_waypoints-1;
   }
 
   double n_x = map_waypoints_x[next_wp]-map_waypoints_x[prev_wp];
@@ -174,7 +173,7 @@ std::vector<double> Map::getXY(double s, double d)
     prev_wp++;
   }
 
-  int wp2 = (prev_wp+1)%map_size;
+  int wp2 = (prev_wp+1)%n_waypoints;
 
   double heading = atan2((map_waypoints_y[wp2]-map_waypoints_y[prev_wp]),(map_waypoints_x[wp2]-map_waypoints_x[prev_wp]));
   // the x,y,s along the segment

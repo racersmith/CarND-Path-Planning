@@ -150,7 +150,7 @@ int main() {
 
           }
 
-          if(pre_path_x.size() < 5){
+          if(pre_path_x.size() < 20){
             // Update path planner
             planner.Update(car_x, car_y,
                            car_s, car_d,
@@ -163,6 +163,8 @@ int main() {
           vector<double> next_x_vals = planner.next_x_;
           vector<double> next_y_vals = planner.next_y_;
 
+//          std::cout << next_x_vals.size() << "  ";
+//          std::cout << next_y_vals.size() << std::endl;
 
           // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           msgJson["next_x"] = next_x_vals;

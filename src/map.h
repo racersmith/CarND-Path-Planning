@@ -45,8 +45,12 @@ public:
   std::vector<double> map_waypoints_s;
   std::vector<double> map_waypoints_dx;
   std::vector<double> map_waypoints_dy;
-  double max_s;
-  int map_size;
+
+  // Length of one lap
+  double lap_length;
+
+  // Max map index
+  int n_waypoints;
 };
 
 
