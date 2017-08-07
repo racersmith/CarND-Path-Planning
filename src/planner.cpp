@@ -8,13 +8,20 @@
 //#include "vehicle.h"
 #include "map.h"
 #include "spline.h"
+#include "jmt.h"
 
 Planner::Planner(Map map) : map(map) {
-  NUM_POINTS_ = 100;
+  NUM_POINTS_ = 50;
   TIME_STEP_ = 0.02;    // s
   MAX_ACCELERATION = 9.81;   //m/s^2
 //  SPEED_LIMIT = 22.0;   //m/s -> 50 MPH
-  SPEED_LIMIT = 44.0;   //m/s -> 50 MPH
+  SPEED_LIMIT = 44.0;   //m/s -> 100 MPH
+  LANE_WIDTH = 4.0;    // Lane width
+
+  // How much room to give to cars in lane
+  FORWARD_BUFFER = 100.0;
+  REARWARD_BUFFER = 50.0;
+
   this->map = map;
 }
 
@@ -40,12 +47,12 @@ void Planner::Update(double car_x,
   this->previous_path_y_= previous_path_y;
   this->end_s_= end_s;
   this->end_d_ = end_d;
+  this->tracked_vehicles_ = tracked_vehicles;
 
   // Run planner
   Planner::KeepLane();
 //  Planner::Circles();
 }
-
 
 void Planner::KeepLane() {
   double pos_s;
@@ -53,6 +60,8 @@ void Planner::KeepLane() {
   double pos_y;
   double angle;
   int path_size = previous_path_x_.size();
+  int current_lane = car_d_/LANE_WIDTH;
+//  current_lane = 0;   // Test alt. target lane
 
   // clear previous
   next_x_ = {};
@@ -95,36 +104,40 @@ void Planner::KeepLane() {
     next_waypoints_y.push_back(pos_y);
   }
 
-  int next_waypoint_index = map.NextWaypoint(pos_x, pos_y, angle);
-
-  for(int i=0; i<5; i++){
-    int waypoint_index = (next_waypoint_index + i)%map.n_waypoints;
-    double map_s = map.map_waypoints_s[waypoint_index];
-    if(map_s < next_waypoints_s.back()){
-      map_s += map.lap_length;
+  // Find car ahead and car behind in same lane
+  double s_ahead = 1000.0;
+  double v_ahead = SPEED_LIMIT;
+  double s_behind = -1000.0;
+  double v_behind = SPEED_LIMIT;
+  for(int i=0; i<tracked_vehicles_.size(); i++){
+    int lane = tracked_vehicles_[i].d/LANE_WIDTH;
+    // Check if the car is in the same lane
+    if(lane == current_lane){
+      double s_diff = tracked_vehicles_[i].s - car_s_;
+      if(s_diff > 0 && s_diff < s_ahead){
+        s_ahead = s_diff;
+        v_ahead = tracked_vehicles_[i].v;
+      }
+      else if(s_diff < 0 && s_diff > s_behind){
+        s_behind = s_diff;
+        v_behind = tracked_vehicles_[i].v;
+      }
     }
-    next_waypoints_s.push_back(map_s);
-    next_waypoints_x.push_back(map.map_waypoints_x[waypoint_index]);
-    next_waypoints_y.push_back(map.map_waypoints_y[waypoint_index]);
-    std::cout << next_waypoints_s.back() << "  ";
-    std::cout << next_waypoints_x.back() << "  ";
-    std::cout << next_waypoints_y.back() << std::endl;
   }
-  std::cout << std::endl;
-  tk::spline spline_x;
-  tk::spline spline_y;
-
-  spline_x.set_points(next_waypoints_s, next_waypoints_x);
-  spline_y.set_points(next_waypoints_s, next_waypoints_y);
-
+  std::cout << "Car " << int(s_ahead) << " ahead moving at " << int(v_ahead) << " m/s." << std::endl;
 
   for(int i=0; i<NUM_POINTS_-path_size; i++)
   {
-//    std::vector<double> next_xy = map.getXY(car_s_+i*dist_inc, car_d_);
-//    next_x_.push_back(next_xy[0]);
-//    next_y_.push_back(next_xy[1]);
-    next_x_.push_back(spline_x(pos_s + (i+1)*TIME_STEP_*SPEED_LIMIT));
-    next_y_.push_back(spline_y(pos_s + (i+1)*TIME_STEP_*SPEED_LIMIT));
+//    next_x_.push_back(spline_x(pos_s + (i+1)*TIME_STEP_*SPEED_LIMIT));
+//    next_y_.push_back(spline_y(pos_s + (i+1)*TIME_STEP_*SPEED_LIMIT));
+//    double s = pos_s + (i+1)*TIME_STEP_*v_ahead;
+    double s = pos_s + (i+1)*TIME_STEP_*SPEED_LIMIT*5;
+    std::vector<double> xy = map.getXY(s, current_lane*LANE_WIDTH + LANE_WIDTH/2);
+
+//    next_x_.push_back(spline_x(pos_s + (i+1)*TIME_STEP_*v_ahead));
+//    next_y_.push_back(spline_y(pos_s + (i+1)*TIME_STEP_*v_ahead));
+    next_x_.push_back(xy[0]);
+    next_y_.push_back(xy[1]);
   }
 }
 

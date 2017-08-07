@@ -15,8 +15,9 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
-#include "vehicle.h"
-#include "planner.h"
+#include "spline.h"
+
+
 
 class Map {
 public:
@@ -38,7 +39,6 @@ public:
   // Get the x, y coordinates from frenet coordinates
   std::vector<double> getXY(double s, double d);
 
-//private:
   // Data
   std::vector<double> map_waypoints_x;
   std::vector<double> map_waypoints_y;
@@ -51,6 +51,12 @@ public:
 
   // Max map index
   int n_waypoints;
+
+  private:
+  tk::spline spline_x;
+  tk::spline spline_y;
+  tk::spline spline_dx;
+  tk::spline spline_dy;
 };
 
 

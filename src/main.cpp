@@ -147,10 +147,11 @@ int main() {
 
               tracked_vehicles.push_back(new_vehicle);
             }
-
           }
 
-          if(pre_path_x.size() < 20){
+//          std::cout << tracked_vehicles.size() << std::endl;
+
+          if(pre_path_x.size() < 50){
             // Update path planner
             planner.Update(car_x, car_y,
                            car_s, car_d,

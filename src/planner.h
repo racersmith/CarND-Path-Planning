@@ -8,6 +8,7 @@
 #include <vector>
 #include "vehicle.h"
 #include "map.h"
+#include "jmt.h"
 
 class Planner {
 private:
@@ -22,9 +23,18 @@ private:
 
   // Speed Limit
   float SPEED_LIMIT;
+  float LANE_WIDTH;
+
+  double FORWARD_BUFFER;
+  double REARWARD_BUFFER;
 
   // Course map
   Map map;
+
+  // Current trajectory
+  JMT s_trajectory;
+  JMT d_trajectory;
+
 public:
   std::vector<double> next_x_;
   std::vector<double> next_y_;
@@ -57,6 +67,17 @@ public:
    * Stay in lane and avoid forward and rearward collisions
    */
   void KeepLane();
+
+
+  /*
+   * Lane Change Left
+   */
+  void LaneChangeLeft();
+
+  /*
+   * Lane Change Right
+   */
+  void LaneChangeRight();
 
   /*
    * Driving in circles example

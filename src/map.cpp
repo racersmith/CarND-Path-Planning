@@ -14,10 +14,8 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
-#include "vehicle.h"
-#include "planner.h"
-
 #include "map.h"
+#include "spline.h"
 
 
 double distance(double x1, double y1, double x2, double y2)
@@ -57,13 +55,26 @@ Map::Map(std::string map_file) {
   std::cout << "Lap Length: " << lap_length << std::endl;
 
   // Overlap the map to the start
-//  map_waypoints_x.push_back(map_waypoints_x[0]);
-//  map_waypoints_y.push_back(map_waypoints_y[0]);
-//  map_waypoints_s.push_back(lap_length);
-//  map_waypoints_dx.push_back(map_waypoints_dx[0]);
-//  map_waypoints_dy.push_back(map_waypoints_dy[0]);
+  map_waypoints_x.push_back(map_waypoints_x[0]);
+  map_waypoints_y.push_back(map_waypoints_y[0]);
+  map_waypoints_s.push_back(lap_length);
+  map_waypoints_dx.push_back(map_waypoints_dx[0]);
+  map_waypoints_dy.push_back(map_waypoints_dy[0]);
+
+  // Add an additional point to improve curvature at start/finish
+  map_waypoints_x.push_back(map_waypoints_x[1]);
+  map_waypoints_y.push_back(map_waypoints_y[1]);
+  map_waypoints_s.push_back(lap_length + map_waypoints_s[1]);
+  map_waypoints_dx.push_back(map_waypoints_dx[1]);
+  map_waypoints_dy.push_back(map_waypoints_dy[1]);
 
   n_waypoints = map_waypoints_x.size();
+
+  // Generate splines for smooth road map
+  spline_x.set_points(map_waypoints_s, map_waypoints_x);
+  spline_y.set_points(map_waypoints_s, map_waypoints_y);
+  spline_dx.set_points(map_waypoints_s, map_waypoints_dx);
+  spline_dy.set_points(map_waypoints_s, map_waypoints_dy);
 }
 
 
@@ -164,28 +175,39 @@ std::vector<double> Map::getFrenet(double x, double y, double theta)
 
 
 // Transform from Frenet s,d coordinates to Cartesian x,y
-std::vector<double> Map::getXY(double s, double d)
-{
-  int prev_wp = -1;
+//std::vector<double> Map::getXY(double s, double d)
+//{
+//  int prev_wp = -1;
+//
+//  while(s > map_waypoints_s[prev_wp+1] && (prev_wp < (int)(map_waypoints_s.size()-1) ))
+//  {
+//    prev_wp++;
+//  }
+//
+//  int wp2 = (prev_wp+1)%n_waypoints;
+//
+//  double heading = atan2((map_waypoints_y[wp2]-map_waypoints_y[prev_wp]),(map_waypoints_x[wp2]-map_waypoints_x[prev_wp]));
+//  // the x,y,s along the segment
+//  double seg_s = (s-map_waypoints_s[prev_wp]);
+//
+//  double seg_x = map_waypoints_x[prev_wp]+seg_s*cos(heading);
+//  double seg_y = map_waypoints_y[prev_wp]+seg_s*sin(heading);
+//
+//  double perp_heading = heading-M_PI/2;
+//
+//  double x = seg_x + d*cos(perp_heading);
+//  double y = seg_y + d*sin(perp_heading);
+//
+//  return {x,y};
+//}
 
-  while(s > map_waypoints_s[prev_wp+1] && (prev_wp < (int)(map_waypoints_s.size()-1) ))
-  {
-    prev_wp++;
+std::vector<double> Map::getXY(double s, double d){
+  while(s >= lap_length){
+    s -= lap_length;
   }
-
-  int wp2 = (prev_wp+1)%n_waypoints;
-
-  double heading = atan2((map_waypoints_y[wp2]-map_waypoints_y[prev_wp]),(map_waypoints_x[wp2]-map_waypoints_x[prev_wp]));
-  // the x,y,s along the segment
-  double seg_s = (s-map_waypoints_s[prev_wp]);
-
-  double seg_x = map_waypoints_x[prev_wp]+seg_s*cos(heading);
-  double seg_y = map_waypoints_y[prev_wp]+seg_s*sin(heading);
-
-  double perp_heading = heading-M_PI/2;
-
-  double x = seg_x + d*cos(perp_heading);
-  double y = seg_y + d*sin(perp_heading);
-
+  double dx = d * spline_dx(s);
+  double dy = d * spline_dy(s);
+  double x = spline_x(s) + dx;
+  double y = spline_y(s) + dy;
   return {x,y};
 }
