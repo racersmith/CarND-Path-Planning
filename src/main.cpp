@@ -149,9 +149,10 @@ int main() {
             }
           }
 
-//          std::cout << tracked_vehicles.size() << std::endl;
+//          std::cout << tracked_vehicles.size() << std::endl
+//          std::cout << pre_path_x.size() << std::endl;
 
-          if(pre_path_x.size() < 50){
+          if(pre_path_x.size() < 40){
             // Update path planner
             planner.Update(car_x, car_y,
                            car_s, car_d,
@@ -164,6 +165,7 @@ int main() {
           vector<double> next_x_vals = planner.next_x_;
           vector<double> next_y_vals = planner.next_y_;
 
+//          std::cout << "Main: ";
 //          std::cout << next_x_vals.size() << "  ";
 //          std::cout << next_y_vals.size() << std::endl;
 

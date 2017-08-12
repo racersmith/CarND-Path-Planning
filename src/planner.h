@@ -16,14 +16,14 @@ private:
   int NUM_POINTS_;
 
   // Time steps between points
-  float TIME_STEP_;
+  double TIME_STEP_;
 
   // Maximum Acceleration
-  float MAX_ACCELERATION;
+  double MAX_ACCELERATION;
 
   // Speed Limit
-  float SPEED_LIMIT;
-  float LANE_WIDTH;
+  double SPEED_LIMIT;
+  double LANE_WIDTH;
 
   double FORWARD_BUFFER;
   double REARWARD_BUFFER;
@@ -31,13 +31,11 @@ private:
   // Course map
   Map map;
 
-  // Current trajectory
-  JMT s_trajectory;
-  JMT d_trajectory;
-
 public:
   std::vector<double> next_x_;
   std::vector<double> next_y_;
+  std::vector<double> next_s_;
+  std::vector<double> next_d_;
   double car_x_;
   double car_y_;
   double car_s_;

@@ -23,11 +23,18 @@ public:
   // Default destructor
   ~JMT() = default;
 
-  // Set starting and ending state and transistion time
+  // Set starting and ending state and transition time
   void set(std::vector<double> start, std::vector<double> end, double time);
 
-  // Target position at time
+  // Target position at time, t
   double operator() (double t) const;
+
+  // Target velocity at time, t
+  double velocity(double t) const;
+
+  // Target acceleration at time, t
+  double accleration(double t) const;
+
 
 private:
   double T;
@@ -36,6 +43,7 @@ private:
   double T4;
   double T5;
   std::vector<double> trajectory_coeff = {};
+
 };
 
 

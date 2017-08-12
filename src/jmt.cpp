@@ -36,7 +36,7 @@ void JMT::set(std::vector<double> start, std::vector<double> end, double time){
       6*T , 12*T2, 20*T3;
 
   MatrixXd B = MatrixXd(3,1);
-  B << end[0]-(start[0]+start[1]*T+.5*start[2]*T2),
+  B << end[0]-(start[0]+start[1]*T+0.5*start[2]*T2),
        end[1]-(start[1]+start[2]*T),
        end[2]-start[2];
 
@@ -45,7 +45,7 @@ void JMT::set(std::vector<double> start, std::vector<double> end, double time){
     MatrixXd C = Ai*B;
 
   // Initial condition
-  trajectory_coeff = {start[0], start[1], .5*start[2]};
+  trajectory_coeff = {start[0], start[1], 0.5*start[2]};
   // end condition
   for(int i = 0; i < C.size(); i++)
   {
@@ -62,3 +62,23 @@ double JMT::operator() (double t) const{
 
   return result;
 };
+
+double JMT::velocity(double t) const{
+  // Calculate velocity at time, t
+  double result = 0;
+  for(int i=1; i < trajectory_coeff.size(); i++){
+    result += (i)*trajectory_coeff[i] * std::pow(t, i-1);
+  }
+
+  return result;
+}
+
+double JMT::accleration(double t) const{
+  // Calculate acceleration at time, t
+  double result = 0;
+  for(int i=2; i < trajectory_coeff.size(); i++){
+    result += ((i-1)*i)*trajectory_coeff[i] * std::pow(t, i-2);
+  }
+
+  return result;
+}

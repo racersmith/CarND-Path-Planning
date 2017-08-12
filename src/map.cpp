@@ -174,7 +174,7 @@ std::vector<double> Map::getFrenet(double x, double y, double theta)
 }
 
 
-// Transform from Frenet s,d coordinates to Cartesian x,y
+//// Transform from Frenet s,d coordinates to Cartesian x,y
 //std::vector<double> Map::getXY(double s, double d)
 //{
 //  int prev_wp = -1;
@@ -201,6 +201,7 @@ std::vector<double> Map::getFrenet(double x, double y, double theta)
 //  return {x,y};
 //}
 
+// Transform from Frenet (s,d) coordinates to a spline smoothed, Cartesian, (x,y)
 std::vector<double> Map::getXY(double s, double d){
   while(s >= lap_length){
     s -= lap_length;
