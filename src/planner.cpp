@@ -184,9 +184,9 @@ void Planner::KeepLane() {
 
 
   // Find car ahead and car behind in same lane
-  double s_ahead = 1000.0;
+  double s_ahead = 100.0;
   double v_ahead = SPEED_LIMIT;
-  double s_behind = -1000.0;
+  double s_behind = -100.0;
   double v_behind = SPEED_LIMIT;
   for(int i=0; i<tracked_vehicles_.size(); i++){
     int lane = tracked_vehicles_[i].d/LANE_WIDTH;
@@ -203,6 +203,7 @@ void Planner::KeepLane() {
 //      }
     }
   }
+
   std::cout << "Car " << int(s_ahead) << "m ahead moving at " << int(v_ahead) << " m/s." << std::endl;
 
 //  tk::spline velocity;
@@ -215,7 +216,7 @@ void Planner::KeepLane() {
   std::vector<double> xy;
 
 
-  double target_speed = SPEED_LIMIT;
+  double target_speed = v_ahead;
   double target_d = current_lane*LANE_WIDTH + LANE_WIDTH/2.0;
   while(next_x_.size() < NUM_POINTS_){
     speed += (target_speed - speed)*0.01;
