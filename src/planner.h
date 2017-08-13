@@ -31,6 +31,12 @@ private:
   // Course map
   Map map;
 
+  // Traffic
+  std::vector<double> closest_ahead;
+  std::vector<double> closest_behind;
+  std::vector <double> lane_speeds;
+  std::vector <bool> open;
+
 public:
   std::vector<double> next_x_;
   std::vector<double> next_y_;
@@ -48,6 +54,7 @@ public:
   double end_d_;
   std::vector<Vehicle> tracked_vehicles_;
 
+
   // Constructor
   Planner(Map map);
 
@@ -62,19 +69,20 @@ public:
               std::vector<Vehicle> tracked_vehicles);
 
   /*
+   * Analyze traffic flow
+   */
+  void Traffic();
+
+
+  /*
    * Stay in lane and avoid forward and rearward collisions
    */
   void KeepLane();
 
   /*
-   * Lane Change Left
+   * Change lane
    */
-  void LaneChangeLeft();
-
-  /*
-   * Lane Change Right
-   */
-  void LaneChangeRight();
+  void ChangeLane(int target_lane, double target_speed);
 
   /*
    * Driving in circles example
