@@ -66,7 +66,6 @@ public:
    */
   void KeepLane();
 
-
   /*
    * Lane Change Left
    */
