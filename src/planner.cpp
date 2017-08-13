@@ -14,14 +14,15 @@ Planner::Planner(Map map) : map(map) {
   NUM_POINTS_ = 50;
   TIME_STEP_ = 0.02;    // s
   MAX_ACCELERATION = 9.81;   //m/s^2
-  SPEED_LIMIT = 49*0.44704;   //m/s -> 50 MPH
+  SPEED_LIMIT = 45*0.44704;   //m/s
 //  SPEED_LIMIT = 100*0.44704;   //m/s -> 100 MPH
   LANE_WIDTH = 4.0;    // Lane width
 
   // How much room to give to cars in lane
   FORWARD_BUFFER = 100.0;
   REARWARD_BUFFER = 50.0;
-
+  lane_change_counter = 0;
+  target_lane = 1;
   this->map = map;
 //
 //  s_trajectory = JMT();
@@ -54,28 +55,98 @@ void Planner::Update(double car_x,
   this->end_d_ = end_d;
   this->tracked_vehicles_ = tracked_vehicles;
 
+  current_lane = car_d/LANE_WIDTH;
+  if(previous_path_x_.size() > 0){
+    current_lane = end_d_/LANE_WIDTH;
+  }
 
 
   // Analyze traffic
   Planner::Traffic();
 
+  // Examine options
+  // costs {lane change left, keep lane and lane change right}
+  std::vector<double> costs = {lane_change_counter, 0, lane_change_counter};
+
+  if(previous_path_x_.size() > 2) {
+    // Run cost analysis of options
+    for (int i = -1; i <= 1; i++) {
+      int test_lane = current_lane + i;
+      // prefer to stay in lane
+      costs[i+1] += 0.5 * i * i;
+
+      // Don't drive off the road
+      if (test_lane < 0 || test_lane > 2) {
+        costs[i+1] += 1000000;
+      } else {
+        // Possible progress
+        costs[i+1] += 3.0 * (1.0 - closest_ahead[test_lane]/50.0);
+        // Faster lane
+        costs[i+1] += 3.0 * (1.0 - lane_speeds[test_lane]/SPEED_LIMIT);
+        // Can change into lane
+        costs[i+1] += 100000 * !open[test_lane];
+      }
+      std::cout << costs[i + 1] << " ";
+    }
+    std::cout << std::endl;
+
+    // decide what to do
+    double best_cost = costs[0];
+    int best_option = 0;
+    for (int i = 1; i < 3; i++) {
+      if (costs[i] < best_cost) {
+        best_cost = costs[i];
+        best_option = i;
+      }
+    }
+
+//    if(std::abs((car_d_-LANE_WIDTH/2)/LANE_WIDTH) > LANE_WIDTH/3.0){
+//      lane_change_counter += 1;
+//    }
+
+
+    switch (best_option) {
+      case 0:
+//        KeepLane(current_lane-1);
+        target_lane -= 1;
+        target_lane = std::max(target_lane, 0);
+        lane_change_counter += 100;
+        break;
+      case 1:
+//        KeepLane(current_lane);
+        lane_change_counter -= 1;
+        lane_change_counter = std::max(lane_change_counter, 0);
+        break;
+      case 2:
+//        KeepLane(current_lane+1);
+        target_lane += 1;
+        target_lane = std::min(target_lane, 2);
+        lane_change_counter += 100;
+        break;
+    }
+    KeepLane(target_lane);
+  }
+  else{
+    KeepLane(current_lane);
+  }
+
+
   // Run planner
-  Planner::KeepLane();
+//  KeepLane(1);
 //  Planner::Circles();
 }
 
 
 void Planner::Traffic(){
   // Search each lane for closest leading and trailing car
-  double forward_search_distance = 500;
-  double rearward_search_distance = 500;
+  double forward_search_distance = 50;
+  double rearward_search_distance = 50;
 
   closest_ahead = {forward_search_distance, forward_search_distance, forward_search_distance};
   closest_behind = {rearward_search_distance, rearward_search_distance, rearward_search_distance};
   lane_speeds = {SPEED_LIMIT, SPEED_LIMIT, SPEED_LIMIT};
   open = {true, true, true};
 
-  int current_lane = car_d_/LANE_WIDTH;
   int pos_s = car_s_;
   if(previous_path_x_.size() > 0){
     current_lane = end_d_/LANE_WIDTH;
@@ -102,7 +173,7 @@ void Planner::Traffic(){
     }
       // car is behind us
     else {
-      if (tracked_pos < closest_behind[tracked_lane]) {
+      if (pos_s - tracked_pos < closest_behind[tracked_lane]) {
         closest_behind[tracked_lane] = pos_s - tracked_pos;
       }
     }
@@ -116,7 +187,7 @@ void Planner::Traffic(){
   }
 }
 
-void Planner::KeepLane() {
+void Planner::KeepLane(int target_lane) {
   double pos_s = car_s_;
   double pos_d = car_d_;
   double speed = car_speed_;
@@ -138,49 +209,27 @@ void Planner::KeepLane() {
     next_d_.erase(next_d_.begin());
   }
 
-  if(path_size > 1) {
+  double target_d = target_lane*LANE_WIDTH + LANE_WIDTH/2.0;
+  tk::spline spline_d;
+  if(path_size >= 2) {
     pos_s = next_s_.back();
     pos_d = next_d_.back();
     speed = (next_s_.back() - next_s_[next_s_.size() -2])/TIME_STEP_;
+
+
+    spline_d.set_points(
+        {next_s_[next_s_.size() -2], next_s_.back(), next_s_.back()+30, next_s_.back()+60},
+        {next_d_[next_d_.size() -2], next_d_.back(), target_d, target_d});
+  }
+  else{
+    spline_d.set_points(
+        {car_s_-1, car_s_, car_s_+30, car_s_+60},
+        {car_d_, car_d_, target_d, target_d});
   }
 
 
-  int current_lane = pos_d/LANE_WIDTH;
-
-
-//   Find car ahead and car behind in same lane
-//  double closest = FORWARD_BUFFER;
-//  double v_ahead = SPEED_LIMIT;
-////  double s_behind = -500.0;
-////  double v_behind = SPEED_LIMIT;
-//
-//  for(int i=0; i<tracked_vehicles_.size(); i++){
-//    int lane = tracked_vehicles_[i].d/LANE_WIDTH;
-//    // Check if the car is in the same lane
-//    if(lane == current_lane){
-//
-//      double test_s = tracked_vehicles_[i].s;
-//      // deal with map rollover
-//      while(test_s - car_s_ < -0.5*map.lap_length){
-//        test_s += map.lap_length;
-//      }
-//      double s_diff = test_s - car_s_;
-//      if(s_diff > 0 && s_diff < closest){
-//        closest = s_diff;
-//        v_ahead = tracked_vehicles_[i].v;
-//      }
-////      else if(s_diff < 0 && s_diff > s_behind){
-////        s_behind = s_diff;
-////        v_behind = tracked_vehicles_[i].v;
-////      }
-//    }
-//  }
-
-//  double target_speed = lane_speeds[current_lane] / (1+std::exp((-closest_ahead[current_lane] + 10)/2.0));
-//  double delta_v = 2*(SPEED_LIMIT - v_ahead);
-//  double target_speed = SPEED_LIMIT-delta_v +  delta_v / (1+std::exp((-closest + 35)/4.0));
-  double delta_v = 2*(SPEED_LIMIT - lane_speeds[current_lane]);
-  double target_speed = SPEED_LIMIT-delta_v +  delta_v / (1+std::exp((-closest_ahead[current_lane] + 35)/4.0));
+  double delta_v = 2.0*(SPEED_LIMIT - lane_speeds[current_lane]);
+  double target_speed = SPEED_LIMIT-delta_v + delta_v / (1.0+std::exp((-closest_ahead[current_lane] + 25.0)/3.0));
 
 
 //  std::cout << "Car " << int(closest_ahead[current_lane]) << "m ahead moving at " << int(lane_speeds[current_lane]) << " m/s." << std::endl;
@@ -191,25 +240,27 @@ void Planner::KeepLane() {
 //  std::cout << velocity(0.2) << std::endl;
 //  std::cout << NUM_POINTS_-next_x_.size() << std::endl;
 
+
   std::vector<double> xy;
 
-  double target_d = current_lane*LANE_WIDTH + LANE_WIDTH/2.0;
+//  pos_d = current_lane*LANE_WIDTH + LANE_WIDTH/2.0;
   while(next_x_.size() < NUM_POINTS_){
     speed += (target_speed - speed)*0.01;
     pos_s += TIME_STEP_*speed;
 //    pos_s += TIME_STEP_*target_speed;
-    pos_d += (target_d - pos_d)*0.001;
+//    pos_d += (target_d - pos_d)*0.001;
+    pos_d = spline_d(pos_s);
 //    double s = 10*(i+1);
 //    double s = pos_s + t*velocity(t);
 //    std::cout << s << " ";
 
     // getXY implements a spline smoothed path
-    xy = map.getXY(pos_s, target_d);
+    xy = map.getXY(pos_s, pos_d);
 //    std::cout << xy[0] << " " << xy[1] << std::endl;
     next_x_.push_back(xy[0]);
     next_y_.push_back(xy[1]);
     next_s_.push_back(pos_s);
-    next_d_.push_back(target_d);
+    next_d_.push_back(pos_d);
   }
 //  xy = map.getXY(car_s_, car_d_);
 //  std::cout << xy[0] << " " << xy[1]  << std::endl;
@@ -219,40 +270,65 @@ void Planner::KeepLane() {
 //  std::cout << std::endl;
 }
 
-void Planner::ChangeLane(int target_lane, double target_speed){
-  double pos_s = car_s_;
-  double pos_d = car_d_;
-  double speed = car_speed_;
-
-  // clear previous
-  next_x_ = {};
-  next_y_ = {};
-
-  int path_size = previous_path_x_.size();
-
-  for(int i = 0; i < path_size; i++) {
-    next_x_.push_back(previous_path_x_[i]);
-    next_y_.push_back(previous_path_y_[i]);
-  }
-
-  // purge past points
-  while(next_s_.size() > path_size){
-    next_s_.erase(next_s_.begin());
-    next_d_.erase(next_d_.begin());
-  }
-
-  if(path_size > 1) {
-    pos_s = next_s_.back();
-    pos_d = next_d_.back();
-    speed = (next_s_.back() - next_s_[next_s_.size() -2])/TIME_STEP_;
-  }
-
-
-
-
-  int current_lane = pos_d/LANE_WIDTH;
-
-}
+//void Planner::ChangeLane(int target_lane){
+//  double pos_s = car_s_;
+//  double pos_d = car_d_;
+//  double speed = car_speed_;
+//
+//  // clear previous
+//  next_x_ = {};
+//  next_y_ = {};
+//
+//  int path_size = previous_path_x_.size();
+//
+//  for(int i = 0; i < path_size; i++) {
+//    next_x_.push_back(previous_path_x_[i]);
+//    next_y_.push_back(previous_path_y_[i]);
+//  }
+//
+//  // purge past points
+//  while(next_s_.size() > path_size){
+//    next_s_.erase(next_s_.begin());
+//    next_d_.erase(next_d_.begin());
+//  }
+//
+//  if(path_size > 1) {
+//    pos_s = next_s_.back();
+//    pos_d = next_d_.back();
+//    speed = (next_s_.back() - next_s_[next_s_.size()-2])/TIME_STEP_;
+//  }
+//
+//  double target_d = target_lane*LANE_WIDTH + LANE_WIDTH/2.0;
+//  std::vector<double> ptss = {next_s_[next_s_.size()-2], next_s_.back(), next_s_.back()+30, next_s_.back()+35};
+//  std::vector<double> ptsd = {next_d_[next_d_.size()-2], next_d_.back(), target_d, target_d};
+//
+//  tk::spline d;
+//  d.set_points(ptss, ptsd);
+//
+//  std::vector<double> xy;
+//
+//
+//
+//
+//  while(next_x_.size() < NUM_POINTS_){
+//    speed += (lane_speeds[target_lane] - speed)*0.01;
+//    pos_s += TIME_STEP_*speed;
+//    pos_d = d(pos_s);
+////    pos_s += TIME_STEP_*target_speed;
+////    pos_d += (target_d - pos_d)*0.01;
+////    double s = 10*(i+1);
+////    double s = pos_s + t*velocity(t);
+////    std::cout << s << " ";
+//
+//    // getXY implements a spline smoothed path
+//    xy = map.getXY(pos_s, pos_d);
+////    std::cout << xy[0] << " " << xy[1] << std::endl;
+//    next_x_.push_back(xy[0]);
+//    next_y_.push_back(xy[1]);
+//    next_s_.push_back(pos_s);
+//    next_d_.push_back(pos_d);
+//  }
+//}
 
 void Planner::Circles(){
   double pos_x;

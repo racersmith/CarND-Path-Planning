@@ -52,8 +52,10 @@ public:
   std::vector<double> previous_path_y_;
   double end_s_;
   double end_d_;
+  int current_lane;
   std::vector<Vehicle> tracked_vehicles_;
-
+  int lane_change_counter;
+  int target_lane;
 
   // Constructor
   Planner(Map map);
@@ -77,12 +79,12 @@ public:
   /*
    * Stay in lane and avoid forward and rearward collisions
    */
-  void KeepLane();
+  void KeepLane(int target_lane);
 
   /*
    * Change lane
    */
-  void ChangeLane(int target_lane, double target_speed);
+  void ChangeLane(int target_lane);
 
   /*
    * Driving in circles example
