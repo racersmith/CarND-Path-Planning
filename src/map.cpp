@@ -207,9 +207,7 @@ std::vector<double> Map::getXY(double s, double d){
   while(s >= lap_length){
     s -= lap_length;
   }
-  double dx = d * spline_dx(s);
-  double dy = d * spline_dy(s);
-  double x = spline_x(s) + dx;
-  double y = spline_y(s) + dy;
+  double x = spline_x(s) + d*spline_dx(s);
+  double y = spline_y(s) + d*spline_dy(s);
   return {x,y};
 }
