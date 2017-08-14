@@ -33,7 +33,7 @@ public:
   double d;
 
   double predict(double t){
-    // assuming s'', d' and d'' = 0
+    // assuming s", d' and d" = 0
     return s + v*t;
   }
 };

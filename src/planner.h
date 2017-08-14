@@ -18,35 +18,29 @@ private:
   // Time steps between points
   double TIME_STEP_;
 
-  // Maximum Acceleration
-  double MAX_ACCELERATION;
-
   // Speed Limit
-  double SPEED_LIMIT;
-  double LANE_WIDTH;
+  double SPEED_LIMIT_;
+  double LANE_WIDTH_;
 
-  double FORWARD_BUFFER;
-  double REARWARD_BUFFER;
+  double FORWARD_BUFFER_;
+  double REARWARD_BUFFER_;
 
   // Course map
   Map map;
 
   // Traffic
-  std::vector<double> closest_ahead;
-  std::vector<double> closest_behind;
-  std::vector <double> lane_speeds;
-  std::vector <bool> open;
+  std::vector<double> closest_ahead_;
+  std::vector<double> closest_behind_;
+  std::vector <double> lane_speeds_;
+  std::vector <bool> is_lane_open_;
 
 public:
   std::vector<double> next_x_;
   std::vector<double> next_y_;
   std::vector<double> next_s_;
   std::vector<double> next_d_;
-  double car_x_;
-  double car_y_;
   double car_s_;
   double car_d_;
-  double car_yaw_;
   double car_speed_;
   std::vector<double> previous_path_x_;
   std::vector<double> previous_path_y_;
@@ -66,7 +60,7 @@ public:
   /*
    * Run planner on current state
    */
-  void Update(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed,
+  void Update(double car_s, double car_d, double car_speed,
               std::vector<double> previous_path_x, std::vector<double> previous_path_y, double end_s, double end_d,
               std::vector<Vehicle> tracked_vehicles);
 
@@ -79,18 +73,7 @@ public:
   /*
    * Stay in lane and avoid forward and rearward collisions
    */
-  void KeepLane(int target_lane);
-
-  /*
-   * Change lane
-   */
-  void ChangeLane(int target_lane);
-
-  /*
-   * Driving in circles example
-   */
-  void Circles();
-
+  void UpdatePath(int target_lane);
 };
 
 

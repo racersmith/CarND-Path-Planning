@@ -149,29 +149,16 @@ int main() {
             }
           }
 
-//          std::cout << tracked_vehicles.size() << std::endl
-//          std::cout << pre_path_x.size() << std::endl;
-
-
           // Update path planner
-          planner.Update(car_x, car_y,
-                         car_s, car_d,
-                         car_yaw,
+          planner.Update(car_s, car_d,
                          car_speed,
                          pre_path_x, pre_path_y,
                          end_path_s, end_path_d,
                          tracked_vehicles);
 
-          vector<double> next_x_vals = planner.next_x_;
-          vector<double> next_y_vals = planner.next_y_;
-
-//          std::cout << "Main: ";
-//          std::cout << next_x_vals.size() << "  ";
-//          std::cout << next_y_vals.size() << std::endl;
-
-          // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
-          msgJson["next_x"] = next_x_vals;
-          msgJson["next_y"] = next_y_vals;
+          // Path made up of (x,y) points that the car will visit sequentially every .02 seconds
+          msgJson["next_x"] = planner.next_x_;
+          msgJson["next_y"] = planner.next_y_;
 
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
 

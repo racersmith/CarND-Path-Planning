@@ -175,6 +175,7 @@ std::vector<double> Map::getFrenet(double x, double y, double theta)
 
 
 //// Transform from Frenet s,d coordinates to Cartesian x,y
+//// OG transform, keeping for posterity
 //std::vector<double> Map::getXY(double s, double d)
 //{
 //  int prev_wp = -1;
