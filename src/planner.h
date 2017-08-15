@@ -1,5 +1,5 @@
 //
-// Created by josh on 7/23/17.
+// Created by josh smith on 7/23/17.
 //
 
 #ifndef PATH_PLANNING_PLANNER_H

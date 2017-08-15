@@ -1,5 +1,5 @@
 //
-// Created by josh on 7/23/17.
+// Created by josh smith on 7/23/17.
 //
 
 #include <cmath>
@@ -13,8 +13,8 @@ Planner::Planner(Map map) : map(map) {
   LANE_WIDTH_ = 3.9;    // Lane width, Adjusted to compensate for simulator outside of lane error in lane 2.
 
   // How much room to give to cars in lane
-  FORWARD_BUFFER_ = 8.0;
-  REARWARD_BUFFER_ = 12.0;
+  FORWARD_BUFFER_ = 8.0;    // Improvement would be to make this variable to speed
+  REARWARD_BUFFER_ = 12.0;  // Improvement would be to make this variable to speed
   lane_change_counter = 0;
   target_lane = 1;
   this->map = map;
@@ -76,11 +76,7 @@ void Planner::Update(double car_s,
         // Does a lane change put us closer to a faster lane?
         costs[i+1] += 1.5 * (1.0 - lane_speeds_[test_lane_2]/SPEED_LIMIT_);
       }
-
-//      std::cout << costs[i + 1] << " ";
     }
-//    std::cout << car_d_;
-//    std::cout << std::endl;
 
     // decide what to do
     double best_cost = costs[0];
@@ -96,7 +92,7 @@ void Planner::Update(double car_s,
       case 0:
         target_lane -= 1;
         target_lane = std::max(target_lane, 0);
-        lane_change_counter = 100;
+        lane_change_counter = 110;
         break;
       case 1:
         lane_change_counter -= 1;
@@ -105,7 +101,7 @@ void Planner::Update(double car_s,
       case 2:
         target_lane += 1;
         target_lane = std::min(target_lane, 2);
-        lane_change_counter = 100;
+        lane_change_counter = 110;
         break;
     }
     UpdatePath(target_lane);
@@ -113,8 +109,6 @@ void Planner::Update(double car_s,
   else{
     UpdatePath(current_lane);
   }
-  // Override lane
-//  UpdatePath(2);
 }
 
 
@@ -147,12 +141,11 @@ void Planner::Traffic(){
       if (tracked_vehicles_[i].v < lane_speeds_[tracked_lane]) {
         lane_speeds_[tracked_lane] = tracked_vehicles_[i].v;
       }
-      // Find closest car ahead in lane
       if (tracked_pos - pos_s <= closest_ahead_[tracked_lane]) {
         closest_ahead_[tracked_lane] = tracked_pos - pos_s;
       }
     }
-      // car is behind us
+    // car is behind us
     else {
       if (pos_s - tracked_pos < closest_behind_[tracked_lane]) {
         closest_behind_[tracked_lane] = pos_s - tracked_pos;
