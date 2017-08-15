@@ -127,7 +127,7 @@ Each of these cost functions are assigned different weights that were determined
 
 ### Path Generation
 The target lane determined from the planner is given to the path generation `Planner::UpdatePath()`.  The previously 
-generated future path points are first pushed into the next x, y vectors.  Due to descrepencies in the coordinate 
+generated future path points are first pushed into the next x, y vectors.  Due to discrepancies in the coordinate 
 transforms performed by the simulator and `map.cpp` the Fernet coordinates used to generate the x, y vectors are also 
 tracked and must be purged of past points.  To enable smooth lane changes a spline, `spline_d` is generated using Frenet s, d.  
 The spline generates a path starting at the car's current d position and transitions to the target d position over 30m 
