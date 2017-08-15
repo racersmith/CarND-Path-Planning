@@ -1,5 +1,9 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
+
+
+[![Demo Video](https://img.youtube.com/vi/mDG67tWyG4k/0.jpg)](https://www.youtube.com/watch?v=mDG67tWyG4k)
+
    
 ### Simulator. You can download the Term3 Simulator BETA which contains the Path Planning Project from the [releases tab](https://github.com/udacity/self-driving-car-sim/releases).
 
@@ -118,11 +122,11 @@ Note: regardless of the changes you make, your project must be buildable using
 cmake and make!
 
 
-## Path Planner
+# Path Planner
 
-The path planner is implented in a few stages; smooth, predict, plan, generate.
+The path planner is implemented in a few stages; smooth, predict, plan, generate.
 
-### Smooth
+## Smooth
 The first stage was to generate a smooth path from the list of sparse map wayoints.  This was done using the superb
 cubic spline library from [ttk592](https://github.com/ttk592/spline/).  The spline takes a set of x, y vectors and 
 generates a cubic spline that can then be called as a function.  The one caveat is that it requires the x vector to be
@@ -143,21 +147,25 @@ y = spline_y(s) + d*spline_dy(s)
 ``` 
 All path generation can then be done in Fernet coordinates.
 
-### Predict
-The first step in the update cycle is to analyze the traffic and predict the future positions.  Each car in the 
-sensor_fusion vector sent from the simulator is constructed into a vehicle class instance which allows for simple 
-prediction of behavior within the `Planner::Traffic` method.  The `Traffic` method constructs a simple view of the 
-traffic pattern determining the speed of each lane based on the slowest car ahead as well as determining if the adjacent 
-lanes are open to a lane change.
+The spline generation is done in the `map.cpp` initializer, lines 27-78 and the conversion from Fernet to Cartesien is
+done in `getXY()` on lines 205-213.
 
-### Plan
+## Predict
+The first step in the update cycle is to analyze the traffic and predict the future positions, planner.  Each car in the 
+sensor_fusion vector sent from the simulator is constructed into a vehicle class instance which allows for simple 
+prediction of behavior within the `Planner::Traffic` method, lines 121-169.  The `Traffic` method constructs a 
+simple view of the traffic pattern determining the speed of each lane based on the slowest car ahead as well as 
+determining if the adjacent lanes are open to a lane change.
+
+## Plan
 The second step in the update cycle is to use the traffic pattern and our car's state to determine the best action from:
 * Left lane change
 * Stay in lane
 * Right lane change
 
-To determine the best choice cost functions are used that determines the cost of each action.  The action with the lowest 
-cost is then executed.  The cost functions look at the following:
+Each action is evaluated using a set of cost functions, `Planner::Update` lines 51-110.  The action with the lowest 
+cost is executed.  The cost functions look at the following:
+* Prefer to not drive on the shoulder or into oncoming traffic.
 * Prefer to not be in the fast lane
 * Prefer the lane with the most open space ahead
 * Prefer the lane with the highest lane speed
@@ -166,4 +174,23 @@ cost is then executed.  The cost functions look at the following:
 * Prefer to stay in lane
 * Prefer to make lane changes at least 2 seconds apart.
 
-Each of these cost functions are assigned different weights that were determined from empirical tuning.  
+Each of these cost functions are assigned different weights that were determined from empirical testing.
+
+## Path Generation
+The target lane determined from the planner is given to the path generation `Planner::UpdatePath()`.  The previously 
+generated future path points are first pushed into the next x, y vectors.  Due to descrepencies in the coordinate 
+transforms performed by the simulator and `map.cpp` the Fernet coordinates used to generate the x, y vectors are also 
+tracked and must be purged of past points.  To enable smooth lane changes a spline, `spline_d` is generated using Frenet s, d.  
+The spline generates a path starting at the car's current d position and transitions to the target d position over 30m 
+in forward progress, lines 193-209.
+
+To generate a series of s points the speed of the car needs to be determined.  Speed is calculated by a sigmoid function 
+that has a maximum speed of either the speed limit if the lane is open ahead or the lane speed if the lane has cars 
+ahead.  The sigmoid is calculated based on the distance to the closest car ahead in the same lane.  As the distance 
+decreases the sigmoid approaches one half the leading car speed, lines 212-213.
+
+The next points are now generated starting at the end of the previous path.  Speed is calculated based on a percentage 
+difference between the target speed and the current speed, line 218.  The next s position is then determined based on 
+the speed and the initial s position, line 219.  The next d position is then determined, line 220, from `spline_d`.
+x, y coordinates are generated by `getXY()` in `map.cpp` and finally the new values are pushed into their respective 
+vectors.
